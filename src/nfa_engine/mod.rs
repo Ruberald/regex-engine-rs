@@ -1,85 +1,39 @@
-use std::{char, collections::VecDeque};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-struct State<'a> {
-    name: String,
-    transitions: VecDeque<(&'a dyn Matcher, &'a State<'a>)>,
-    starts_group: Vec<&'static str>,
-    ends_group: Vec<&'static str>,
+mod state;
+
+struct EngineNFA<'a> {
+    states: HashMap<String, Rc<RefCell<state::State<'a>>>>,
+    initial_state: &'a state::State<'a>,
+    ending_states: Vec<&'a state::State<'a>>,
 }
 
-impl<'a> State<'a> {
-    fn new(name: &str) -> Self {
-        State {
-            name: name.to_owned(),
-            transitions: VecDeque::new(),
-            starts_group: Vec::new(),
-            ends_group: Vec::new(),
+impl<'a> EngineNFA<'a> {
+    fn new(initial_state: &'a state::State<'a>, ending_states: Vec<&'a state::State<'a>>) -> Self {
+        EngineNFA {
+            states: HashMap::new(),
+            initial_state,
+            ending_states,
         }
     }
 
-    fn add_transition(&mut self, to_state: &'a State, matcher: &'a dyn Matcher) {
-        self.transitions.push_back((matcher, to_state));
+    fn add_state(&mut self, name: String) {
+        self.states.insert(name.clone(), Rc::new(RefCell::new(state::State::new(name.as_str()))));
     }
 
-    fn pushfront_transition(&mut self, to_state: &'a State, matcher: &'a dyn Matcher) {
-        self.transitions.push_front((matcher, to_state));
-    }
-}
-
-trait Matcher {
-    fn matches(&self, _ch: char) -> bool {
-        false
+    fn declare_states(&mut self, names: Vec<String>) {
+        names.into_iter().for_each(|n| self.add_state(n));
     }
 
-    fn is_epsilon(&self) -> bool {
-        false
+    fn add_transition(&'a mut self, from_state: &String, to_state: &String, matcher: &'a dyn state::Matcher) {
+        self.states[from_state].borrow_mut().add_transition(self.states[to_state].clone(), matcher)
     }
 
-    fn get_label(&self) -> Option<char> {
-        None
+    fn pushfront_transition(&'a mut self, from_state: &String, to_state: &String, matcher: &'a dyn state::Matcher) {
+        self.states[from_state].borrow_mut().pushfront_transition(self.states[to_state].clone(), matcher)
+    }
+
+    fn compute(input: String) -> bool {
+        todo!("Can't compute yet!")
     }
 }
-
-struct CharacterMatcher {
-    c: char,
-}
-
-impl Matcher for CharacterMatcher {
-
-    fn matches(&self, ch: char) -> bool {
-        self.c == ch
-    }
-
-    fn is_epsilon(&self) -> bool {
-        false
-    }
-
-    fn get_label(&self) -> Option<char> {
-        Some(self.c)
-    }
-}
-
-impl CharacterMatcher {
-    fn new(c: char) -> Self {
-        CharacterMatcher {
-            c,
-        }
-    }
-}
-
-struct EpsilonMatcher { }
-
-impl Matcher for EpsilonMatcher {
-    fn matches(&self, _ch: char) -> bool {
-        true
-    }
-
-    fn is_epsilon(&self) -> bool {
-        true
-    }
-
-    fn get_label(&self) -> Option<char> {
-        Some('c')
-    }
-}
-
