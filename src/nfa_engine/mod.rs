@@ -1,15 +1,15 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, usize};
 
-mod state;
+pub mod state;
 
-struct EngineNFA<'a> {
-    states: HashMap<String, Rc<RefCell<state::State<'a>>>>,
-    initial_state: &'a state::State<'a>,
-    ending_states: Vec<&'a state::State<'a>>,
+pub struct EngineNFA<'a> {
+    states: HashMap<&'static str, Rc<RefCell<state::State<'a>>>>,
+    initial_state: &'static str,
+    ending_states: Vec<&'static str>,
 }
 
 impl<'a> EngineNFA<'a> {
-    fn new(initial_state: &'a state::State<'a>, ending_states: Vec<&'a state::State<'a>>) -> Self {
+    pub fn new(initial_state: &'static str, ending_states: Vec<&'static str>) -> Self {
         EngineNFA {
             states: HashMap::new(),
             initial_state,
@@ -17,23 +17,49 @@ impl<'a> EngineNFA<'a> {
         }
     }
 
-    fn add_state(&mut self, name: String) {
-        self.states.insert(name.clone(), Rc::new(RefCell::new(state::State::new(name.as_str()))));
+    pub fn add_state(&mut self, name: &'static str) {
+        self.states.insert(name, Rc::new(RefCell::new(state::State::new(name))));
     }
 
-    fn declare_states(&mut self, names: Vec<String>) {
+    pub fn declare_states(&mut self, names: Vec<&'static str>) {
         names.into_iter().for_each(|n| self.add_state(n));
     }
 
-    fn add_transition(&'a mut self, from_state: &String, to_state: &String, matcher: &'a dyn state::Matcher) {
-        self.states[from_state].borrow_mut().add_transition(self.states[to_state].clone(), matcher)
+    pub fn add_transition(&mut self, from_state: &str, to_state: &str, matcher: Box<dyn state::Matcher>) {
+        self.states[from_state].borrow_mut().add_transition(self.states[to_state].clone(), matcher);
     }
 
-    fn pushfront_transition(&'a mut self, from_state: &String, to_state: &String, matcher: &'a dyn state::Matcher) {
-        self.states[from_state].borrow_mut().pushfront_transition(self.states[to_state].clone(), matcher)
+    pub fn pushfront_transition(&mut self, from_state: &str, to_state: &str, matcher: Box<dyn state::Matcher>) {
+        self.states[from_state].borrow_mut().pushfront_transition(self.states[to_state].clone(), matcher);
     }
 
-    fn compute(input: String) -> bool {
-        todo!("Can't compute yet!")
+    pub fn compute(&self, input: String) -> bool {
+        // todo!("Can't compute yet!");
+
+        let mut stack: Vec<(usize, Rc<RefCell<state::State<'a>>>)> = Vec::new();
+
+        stack.push((0, self.states[self.initial_state].clone()));
+
+        // while !stack.is_empty() {
+        while let Some((i, current_state)) = stack.pop() {
+            // println!("{}", current_state.borrow().name);
+            //if self.ending_states.iter().any(|&i| i == current_state.borrow().name) {
+            if self.ending_states.contains(&current_state.borrow().name) { 
+                return true;
+            }
+
+            if i >= input.len() { break;}
+            let ch = input.as_bytes()[i];
+
+            for (matcher, to_state) in current_state.borrow().transitions.iter().rev() {
+                if matcher.matches(ch as char) {
+                    let next_i = if matcher.is_epsilon() {i} else {i+1};
+                    stack.push((next_i, to_state.clone()))
+                }
+            }
+        }
+        // }
+
+        false
     }
 }

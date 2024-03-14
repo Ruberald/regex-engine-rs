@@ -1,27 +1,27 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 pub struct State<'a> {
-    name: String,
-    transitions: VecDeque<(&'a dyn Matcher, Rc<RefCell<State<'a>>>)>,
+    pub name: &'static str,
+    pub transitions: VecDeque<(Box<dyn Matcher>, Rc<RefCell<State<'a>>>)>,
     starts_group: Vec<&'static str>,
     ends_group: Vec<&'static str>,
 }
 
 impl<'a> State<'a> {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &'static str) -> Self {
         State {
-            name: name.to_owned(),
+            name,
             transitions: VecDeque::new(),
             starts_group: Vec::new(),
             ends_group: Vec::new(),
         }
     }
 
-    pub fn add_transition(&mut self, to_state: Rc<RefCell<State<'a>>>, matcher: &'a dyn Matcher) {
+    pub fn add_transition(&mut self, to_state: Rc<RefCell<State<'a>>>, matcher: Box<dyn Matcher>) {
         self.transitions.push_back((matcher, to_state));
     }
 
-    pub fn pushfront_transition(&mut self, to_state: Rc<RefCell<State<'a>>>, matcher: &'a dyn Matcher) {
+    pub fn pushfront_transition(&mut self, to_state: Rc<RefCell<State<'a>>>, matcher: Box<dyn Matcher>) {
         self.transitions.push_front((matcher, to_state));
     }
 }
@@ -67,7 +67,7 @@ impl CharacterMatcher {
     }
 }
 
-struct EpsilonMatcher { }
+pub struct EpsilonMatcher { }
 
 impl Matcher for EpsilonMatcher {
     fn matches(&self, _ch: char) -> bool {
