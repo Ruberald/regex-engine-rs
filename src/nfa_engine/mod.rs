@@ -36,12 +36,15 @@ impl<'a> EngineNFA<'a> {
     pub fn compute(&self, input: String) -> bool {
         // todo!("Can't compute yet!");
 
-        let mut stack: Vec<(usize, Rc<RefCell<state::State<'a>>>)> = Vec::new();
+        let mut stack: Vec<(
+        usize, 
+        Rc<RefCell<state::State<'a>>>,
+        Vec<&'static str>)> = Vec::new();
 
-        stack.push((0, self.states[self.initial_state].clone()));
+        stack.push((0, self.states[self.initial_state].clone(), vec![]));
 
         // while !stack.is_empty() {
-        while let Some((i, current_state)) = stack.pop() {
+        while let Some((i, current_state, epsilon_visited)) = stack.pop() {
             // println!("{}", current_state.borrow().name);
             //if self.ending_states.iter().any(|&i| i == current_state.borrow().name) {
             if self.ending_states.contains(&current_state.borrow().name) { 
@@ -52,8 +55,20 @@ impl<'a> EngineNFA<'a> {
 
             for (matcher, to_state) in current_state.borrow().transitions.iter().rev() {
                 if matcher.matches(ch) {
+
+                    let mut copy_mem: Vec<&str>;// = epsilon_visited.clone();
+                    if matcher.is_epsilon() {
+                        copy_mem = epsilon_visited.clone();
+                        if copy_mem.contains(&to_state.borrow().name) {
+                            continue;
+                        }
+                        copy_mem.push(current_state.borrow().name);
+                    } else {
+                        copy_mem = vec![];
+                    }
+
                     let next_i = if matcher.is_epsilon() {i} else {i+1};
-                    stack.push((next_i, to_state.clone()))
+                    stack.push((next_i, to_state.clone(), copy_mem));
                 }
             }
         }

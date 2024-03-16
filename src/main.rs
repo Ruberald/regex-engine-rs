@@ -16,4 +16,14 @@ fn main() {
     println!("For aabbbbbb: {}", engine.compute("aabbbbbb".to_string()));
     println!("For ab: {}", engine.compute("ab".to_string()));
     println!("For a: {}", engine.compute("a".to_string()));
+
+    let mut engine2 = nfa_engine::EngineNFA::new("q0", vec!["q2"]);
+
+    engine2.declare_states(vec!["q0", "q1", "q2"]);
+
+    engine2.add_transition("q0", "q1", Box::new(state::CharacterMatcher::new('a')));
+    engine2.add_transition("q1", "q1", Box::new(state::EpsilonMatcher {}));
+    engine2.add_transition("q1", "q2", Box::new(state::CharacterMatcher::new('b')));
+
+    println!("For ab: {}", engine2.compute("ab".to_string()));
 }
