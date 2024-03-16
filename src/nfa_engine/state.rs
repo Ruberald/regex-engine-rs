@@ -27,7 +27,7 @@ impl<'a> State<'a> {
 }
 
 pub trait Matcher {
-    fn matches(&self, _ch: char) -> bool {
+    fn matches(&self, _ch: Option<char>) -> bool {
         false
     }
 
@@ -46,8 +46,11 @@ pub struct CharacterMatcher {
 
 impl Matcher for CharacterMatcher {
 
-    fn matches(&self, ch: char) -> bool {
-        self.c == ch
+    fn matches(&self, ch: Option<char>) -> bool {
+        match ch {
+            Some(ch) => self.c == ch,
+            None => false
+        }
     }
 
     fn is_epsilon(&self) -> bool {
@@ -70,7 +73,7 @@ impl CharacterMatcher {
 pub struct EpsilonMatcher { }
 
 impl Matcher for EpsilonMatcher {
-    fn matches(&self, _ch: char) -> bool {
+    fn matches(&self, _ch: Option<char>) -> bool {
         true
     }
 

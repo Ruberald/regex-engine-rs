@@ -48,11 +48,10 @@ impl<'a> EngineNFA<'a> {
                 return true;
             }
 
-            if i >= input.len() { break;}
-            let ch = input.as_bytes()[i];
+            let ch = if i >= input.len() {None} else {Some(input.as_bytes()[i] as char)};
 
             for (matcher, to_state) in current_state.borrow().transitions.iter().rev() {
-                if matcher.matches(ch as char) {
+                if matcher.matches(ch) {
                     let next_i = if matcher.is_epsilon() {i} else {i+1};
                     stack.push((next_i, to_state.clone()))
                 }

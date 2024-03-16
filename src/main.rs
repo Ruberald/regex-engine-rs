@@ -3,7 +3,7 @@ mod nfa_engine;
 use nfa_engine::state;
 
 fn main() {
-    let mut engine = nfa_engine::EngineNFA::new("q0", vec!["q2"]);
+    let mut engine = nfa_engine::EngineNFA::new("q0", vec!["q3"]);
 
     engine.declare_states(vec!["q0", "q1", "q2", "q3"]);
 
