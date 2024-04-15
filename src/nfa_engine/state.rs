@@ -1,14 +1,14 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 pub struct State<'a> {
-    pub name: &'static str,
+    pub name: &'a str,
     pub transitions: VecDeque<(Box<dyn Matcher>, Rc<RefCell<State<'a>>>)>,
-    starts_group: Vec<&'static str>,
-    ends_group: Vec<&'static str>,
+    starts_group: Vec<&'a str>,
+    ends_group: Vec<&'a str>,
 }
 
 impl<'a> State<'a> {
-    pub fn new(name: &'static str) -> Self {
+    pub fn new(name: &'a str) -> Self {
         State {
             name,
             transitions: VecDeque::new(),

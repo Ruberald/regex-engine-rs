@@ -1,4 +1,5 @@
 mod nfa_engine;
+mod regex_engine;
 
 use nfa_engine::state;
 
@@ -26,4 +27,13 @@ fn main() {
     engine2.add_transition("q1", "q2", Box::new(state::CharacterMatcher::new('b')));
 
     println!("For ab: {}", engine2.compute("ab".to_string()));
+
+    // let regex_str = r"^[a-z]+\d*$";
+    let regex_str = r"a|b*";
+    let mut parser = regex_syntax::Parser::new();
+    let ast = parser.parse(regex_str).unwrap();
+
+    // Do something with the parsed AST (Abstract Syntax Tree)
+    println!("{:#?}", ast);
+
 }

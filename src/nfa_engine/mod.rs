@@ -3,13 +3,13 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc, usize};
 pub mod state;
 
 pub struct EngineNFA<'a> {
-    states: HashMap<&'static str, Rc<RefCell<state::State<'a>>>>,
-    initial_state: &'static str,
-    ending_states: Vec<&'static str>,
+    states: HashMap<&'a str, Rc<RefCell<state::State<'a>>>>,
+    initial_state: &'a str,
+    ending_states: Vec<&'a str>,
 }
 
 impl<'a> EngineNFA<'a> {
-    pub fn new(initial_state: &'static str, ending_states: Vec<&'static str>) -> Self {
+    pub fn new(initial_state: &'a str, ending_states: Vec<&'a str>) -> Self {
         EngineNFA {
             states: HashMap::new(),
             initial_state,
@@ -17,11 +17,11 @@ impl<'a> EngineNFA<'a> {
         }
     }
 
-    pub fn add_state(&mut self, name: &'static str) {
+    pub fn add_state(&mut self, name: &'a str) {
         self.states.insert(name, Rc::new(RefCell::new(state::State::new(name))));
     }
 
-    pub fn declare_states(&mut self, names: Vec<&'static str>) {
+    pub fn declare_states(&mut self, names: Vec<&'a str>) {
         names.into_iter().for_each(|n| self.add_state(n));
     }
 
@@ -39,7 +39,7 @@ impl<'a> EngineNFA<'a> {
         let mut stack: Vec<(
         usize, 
         Rc<RefCell<state::State<'a>>>,
-        Vec<&'static str>)> = Vec::new();
+        Vec<&'a str>)> = Vec::new();
 
         stack.push((0, self.states[self.initial_state].clone(), vec![]));
 
