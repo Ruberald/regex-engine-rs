@@ -29,7 +29,7 @@ fn main() {
     println!("For ab: {}", engine2.compute("ab".to_string()));
 
     // let regex_str = r"^[a-z]+\d*$";
-    let regex_str = r"a|b*";
+    let regex_str = r"ab*";
     let mut parser = regex_syntax::Parser::new();
     let ast = parser.parse(regex_str).unwrap();
 

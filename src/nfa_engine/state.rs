@@ -1,4 +1,6 @@
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{cell::RefCell, collections::VecDeque, ops::Deref, rc::Rc};
+
+use dyn_clone::DynClone;
 
 pub struct State<'a> {
     pub name: &'a str,
@@ -26,7 +28,7 @@ impl<'a> State<'a> {
     }
 }
 
-pub trait Matcher {
+pub trait Matcher: DynClone {
     fn matches(&self, _ch: Option<char>) -> bool {
         false
     }
@@ -40,6 +42,7 @@ pub trait Matcher {
     }
 }
 
+#[derive(Clone)]
 pub struct CharacterMatcher {
     c: char,
 }
@@ -70,6 +73,7 @@ impl CharacterMatcher {
     }
 }
 
+#[derive(Clone)]
 pub struct EpsilonMatcher { }
 
 impl Matcher for EpsilonMatcher {

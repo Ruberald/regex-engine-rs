@@ -1,8 +1,8 @@
-use std::collections::VecDeque;
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
-use regex_syntax::{ast::Ast, hir::Hir};
+use regex_syntax::hir::{Hir, HirKind};
 
-use crate::nfa_engine::{self, state::{self, Matcher}};
+use crate::nfa_engine::state::{self, Matcher};
 
 use super::nfa_engine::EngineNFA;
 
@@ -11,7 +11,7 @@ struct NFABuilder {
     states: VecDeque<String>,
 }
 
-impl NFABuilder {
+impl<'a> NFABuilder {
     pub fn new() -> Self {
         NFABuilder {
             state_number: 0,
@@ -48,40 +48,64 @@ impl NFABuilder {
     }
 
     // _singleRegexToNFA(regexAST) {
-    fn _single_regex_to_nfa(&mut self, regex_ast: Hir) {
-        let mut nfa: EngineNFA;
+    fn _single_regex_to_nfa(self_: &'a Rc<RefCell<NFABuilder>>, regex_ast: &Hir) -> EngineNFA<'a> {
+        // let mut nfa: EngineNFA;
 
-        // if regex_ast.() {
-        //     nfa = self._empty_expression();
-        // }
+        match regex_ast.kind() {
+            // HirKind::Empty => self_.clone().borrow_mut()._empty_expression(),
+            HirKind::Empty => NFABuilder::_empty_expression(&self_),
+            HirKind::Literal(x) => NFABuilder::_one_step_nfa(&self_, Box::new(state::CharacterMatcher::new(x.0[0] as char))),
+            HirKind::Concat(xs) => {
+                let mut first = NFABuilder::_single_regex_to_nfa(&self_, xs.first().unwrap());
+                for i in 1..xs.len() {
+                    let union_state = first.ending_states[0];
+                    first.append_nfa(NFABuilder::_single_regex_to_nfa(&self_, &xs[i]), union_state)
+                }
+
+                first
+            },
+            HirKind::Look(x) => todo!(),
+            HirKind::Class(x) => todo!(),
+            HirKind::Capture(x) => todo!(),
+            HirKind::Repetition(x) => todo!(),
+            HirKind::Alternation(x) => todo!(),
+        }
 
         // iterate over subpatterns and do stuff
-//         for c in regex_ast {
-// 
-//         }
-// 
+        //         for c in regex_ast {
+        // 
+        //         }
+        // 
     }
 
     fn _atomic_pattern_nfa() { }
 
-    fn _empty_expression(&mut self) -> EngineNFA<'_> {
-        self._one_step_nfa(Box::new(state::EpsilonMatcher {}))
+    fn _empty_expression(self_: &'a Rc<RefCell<NFABuilder>>) -> EngineNFA<'a> {
+        NFABuilder::_one_step_nfa(&self_, Box::new(state::EpsilonMatcher {}))
     }
 
-    fn _one_step_nfa(&mut self, matcher: Box<dyn Matcher>) -> EngineNFA<'_> {
-        let a = self.new_state();
-        let b = self.new_state();
+    fn _one_step_nfa(self_: &'a Rc<RefCell<NFABuilder>>, matcher: Box<dyn Matcher>) -> EngineNFA<'a> {
+        let a = self_.borrow_mut().new_state();
+        let b = self_.borrow_mut().new_state();
 
-        self.states.push_front(a);
-        self.states.push_front(b);
+        self_.borrow_mut().states.push_front(a);
+        self_.borrow_mut().states.push_front(b);
 
-        let mut nfa = EngineNFA::new(self.states[0].as_str(), vec![self.states[1].as_str()]);
+        unsafe {
+            let mut nfa = EngineNFA::new((*(self_.as_ref().as_ptr())).states[0].as_str(), 
+                vec![(*(self_.as_ref().as_ptr())).states[1].as_str()]);
 
-        nfa.declare_states(vec![self.states[0].as_str(), self.states[1].as_str()]);
-        nfa.add_transition(self.states[0].as_str(), self.states[1].as_str(), matcher);
+            nfa.declare_states(vec![(*(self_.as_ref().as_ptr())).states[0].as_str(), 
+                (*(self_.as_ref().as_ptr())).states[1].as_str()]);
+            nfa.add_transition(self_.borrow_mut().states[0].as_str(), self_.borrow_mut().states[1].as_str(), matcher);
 
-        nfa
+            nfa
+        }
     }
+
+    // fn append_nfa(&mut self, other_nfa: EngineNFA, union_state: State) {
+
+    // }
 
 }
 

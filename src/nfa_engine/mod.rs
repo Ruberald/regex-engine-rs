@@ -5,7 +5,7 @@ pub mod state;
 pub struct EngineNFA<'a> {
     states: HashMap<&'a str, Rc<RefCell<state::State<'a>>>>,
     initial_state: &'a str,
-    ending_states: Vec<&'a str>,
+    pub ending_states: Vec<&'a str>,
 }
 
 impl<'a> EngineNFA<'a> {
@@ -26,11 +26,28 @@ impl<'a> EngineNFA<'a> {
     }
 
     pub fn add_transition(&mut self, from_state: &str, to_state: &str, matcher: Box<dyn state::Matcher>) {
-        self.states[from_state].borrow_mut().add_transition(self.states[to_state].clone(), matcher);
+        self.states[from_state].borrow_mut().add_transition(self.states[to_state].clone(), dyn_clone::clone_box(&*matcher));
     }
 
     pub fn pushfront_transition(&mut self, from_state: &str, to_state: &str, matcher: Box<dyn state::Matcher>) {
         self.states[from_state].borrow_mut().pushfront_transition(self.states[to_state].clone(), matcher);
+    }
+
+    pub fn append_nfa(&mut self, other_nfa: EngineNFA<'a>, union_state: &str) {
+        for s in other_nfa.states.keys() {
+            self.add_state(s);
+        }
+
+        self.states.remove(other_nfa.initial_state);
+
+        for (matcher, to_transition) in other_nfa.states[other_nfa.initial_state].borrow_mut().transitions.iter() {
+            self.add_transition(union_state, to_transition.borrow().name, dyn_clone::clone_box(&**matcher));
+        }
+
+        if !self.ending_states.is_empty() && self.ending_states.contains(&union_state) {
+            let i = self.ending_states.iter().position(|x| *x == union_state).unwrap();
+            self.ending_states.splice(i..i+(1 as usize), other_nfa.ending_states);
+        }
     }
 
     pub fn compute(&self, input: String) -> bool {
