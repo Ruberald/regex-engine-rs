@@ -1,10 +1,10 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc, usize};
+use std::{cell::RefCell, collections::HashMap, ptr::hash, rc::Rc, str, usize};
 
 pub mod state;
 
 pub struct EngineNFA<'a> {
     states: HashMap<&'a str, Rc<RefCell<state::State<'a>>>>,
-    initial_state: &'a str,
+    pub initial_state: &'a str,
     pub ending_states: Vec<&'a str>,
 }
 
@@ -18,7 +18,10 @@ impl<'a> EngineNFA<'a> {
     }
 
     pub fn add_state(&mut self, name: &'a str) {
+        println!("for engine with initial {}", self.initial_state);
+        println!("init {}", name);
         self.states.insert(name, Rc::new(RefCell::new(state::State::new(name))));
+        println!("states {:?}", self.states.keys());
     }
 
     pub fn declare_states(&mut self, names: Vec<&'a str>) {
@@ -26,6 +29,8 @@ impl<'a> EngineNFA<'a> {
     }
 
     pub fn add_transition(&mut self, from_state: &str, to_state: &str, matcher: Box<dyn state::Matcher>) {
+        println!("{}, {}", from_state, to_state);
+        // println!("the states are {:?}", self.states.keys());
         self.states[from_state].borrow_mut().add_transition(self.states[to_state].clone(), dyn_clone::clone_box(&*matcher));
     }
 
@@ -33,14 +38,19 @@ impl<'a> EngineNFA<'a> {
         self.states[from_state].borrow_mut().pushfront_transition(self.states[to_state].clone(), matcher);
     }
 
-    pub fn append_nfa(&mut self, other_nfa: EngineNFA<'a>, union_state: &str) {
-        for s in other_nfa.states.keys() {
-            self.add_state(s);
+    pub fn append_nfa(&mut self, other_nfa: EngineNFA<'a>, union_state: &'a str) {
+        for (s, state) in other_nfa.states.iter() {
+            // self.add_state(s);
+            self.states.insert(s, state.clone());
         }
+
+        println!("Removing {}", other_nfa.initial_state);
+        println!("union {}", union_state);
 
         self.states.remove(other_nfa.initial_state);
 
-        for (matcher, to_transition) in other_nfa.states[other_nfa.initial_state].borrow_mut().transitions.iter() {
+        println!("the states are {:?}", self.states.keys());
+        for (matcher, to_transition) in other_nfa.states[other_nfa.initial_state].borrow().transitions.iter() {
             self.add_transition(union_state, to_transition.borrow().name, dyn_clone::clone_box(&**matcher));
         }
 

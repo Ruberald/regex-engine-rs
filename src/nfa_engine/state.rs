@@ -67,6 +67,7 @@ impl Matcher for CharacterMatcher {
 
 impl CharacterMatcher {
     pub fn new(c: char) -> Self {
+        println!("on {c}");
         CharacterMatcher {
             c,
         }
